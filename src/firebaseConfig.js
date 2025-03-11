@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getDatabase, ref, onValue } from "firebase/database"; // Ajout des imports pour Realtime Database
+import { getDatabase, ref, onValue, get } from "firebase/database"; // Ajout de get
 import { getFirestore } from "firebase/firestore"; // Firestore
 
 const firebaseConfig = {
@@ -15,10 +15,10 @@ const firebaseConfig = {
 // Initialisation de Firebase
 const app = initializeApp(firebaseConfig);
 
-// Firestore (si tu veux l'utiliser aussi)
+// Firestore
 const db = getFirestore(app);
 
-// Realtime Database (pour ref et onValue)
+// Realtime Database
 const database = getDatabase(app);
 
-export { db, database, ref, onValue };
+export { db, database, ref, onValue, get };

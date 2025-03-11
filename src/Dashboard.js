@@ -1,5 +1,5 @@
-/*
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";  // Import pour la navigation
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Line } from "react-chartjs-2";
 import {
@@ -16,55 +16,59 @@ import { database, ref, onValue, get } from "./firebaseConfig";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-function App() {
+function Dashboard() {
     const [data, setData] = useState({ temperature: 0, humidity: 0 });
     const [personnes, setPersonnes] = useState(0);
     const [historique, setHistorique] = useState([]);
     const [conditions, setConditions] = useState([]);
-    const indexRef = useRef(0); // Stocker l'index sans être réinitialisé à chaque rendu
+    const indexRef = useRef(0);
+    const navigate = useNavigate(); // Permet de changer de page
 
+    const today = new Date().toISOString().split("T")[0];
     useEffect(() => {
-        const dataRef = ref(database, "/mesures");
-
+        const dataRef = ref(database, `/amesures/${today}`); // 🔹 Correction de l'interpolation
+        indexRef.current = 0; // 🔹 Réinitialisation de l'index au montage
+    
         const fetchData = async () => {
-            const snapshot = await get(dataRef);
-            if (snapshot.exists()) {
-                const mesures = snapshot.val();
-                const mesuresArray = Object.values(mesures);
-
-                if (indexRef.current < mesuresArray.length) {
-                    const currentData = mesuresArray[indexRef.current];
-                    setData(currentData);
-
-                    setHistorique((prev) => [...prev.slice(-9), currentData]);
-
-                    indexRef.current++;
+            try {
+                const snapshot = await get(dataRef);
+                if (snapshot.exists()) {
+                    const mesures = snapshot.val();
+                    const mesuresArray = Object.values(mesures);
+    
+                    if (indexRef.current < mesuresArray.length) {
+                        const currentData = mesuresArray[indexRef.current];
+                        setData(currentData);
+    
+                        setHistorique((prev) => [...prev.slice(-9), currentData]); // 🔹 Historique limité à 10 éléments
+    
+                        indexRef.current++;
+                    }
                 }
+            } catch (error) {
+                console.error("Erreur lors de la récupération des données :", error);
             }
         };
-
-        // Exécuter fetchData toutes les 3 secondes
+    
         const interval = setInterval(fetchData, 3000);
-
-        return () => clearInterval(interval); // Nettoyage lors du démontage
-    }, []);
+        return () => clearInterval(interval);
+    }, [today]); // 🔹 Ajout de `today` comme dépendance pour s'assurer que la mise à jour suit la date
+    
 
     useEffect(() => {
-        const personnesRef = ref(database, "/personnes");
-
+        const personnesRef = ref(database, "/apersonnes");
         onValue(personnesRef, (snapshot) => {
             if (snapshot.exists()) {
                 setPersonnes(snapshot.val());
             }
         });
-
     }, []);
 
     useEffect(() => {
         const newConditions = [];
 
         if (data.temperature > 30) {
-            newConditions.push("🔥 Température élevée, utilisez un ventilateur ou baissez la température de la pièce.");
+            newConditions.push("🔥 Température élevée, utilisez un ventilateur.");
         } else if (data.temperature < 15) {
             newConditions.push("❄ Température trop basse, utilisez un chauffage.");
         } else {
@@ -138,26 +142,15 @@ function App() {
 
             <h3 className="text-center">📈 Évolution de la température et humidité</h3>
             <Line data={chartData} />
+
+            {/* Bouton pour aller à l'historique */}
+            <div className="text-center mt-4">
+                <button className="btn btn-primary" onClick={() => navigate("/historique")}>
+                    🔍 Voir l'historique
+                </button>
+            </div>
         </div>
     );
 }
 
-export default App;
-*/
-import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Dashboard from "./Dashboard";
-import Historique from "./Historique";
-
-function App() {
-    return (
-        <Router>
-            <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/historique" element={<Historique />} />
-            </Routes>
-        </Router>
-    );
-}
-
-export default App;
+export default Dashboard;
